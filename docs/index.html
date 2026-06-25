@@ -1,0 +1,1550 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soulprint — keep your AI companion, on any platform</title>
+<meta name="description" content="A private, local-first home for your AI companion's identity. Distill them from a chat, then export to SillyTavern, Janitor, Character.AI and more. Nothing leaves your device.">
+<style>
+:root {
+  --bg: #0d0b16;
+  --bg2: #14111f;
+  --panel: #1a1626;
+  --panel2: #221d33;
+  --line: #2e2740;
+  --ink: #ece9f5;
+  --muted: #9b93b5;
+  --faint: #6b6486;
+  --violet: #7c5cff;
+  --violet2: #a586ff;
+  --rose: #ff6b9d;
+  --gold: #ffcf6b;
+  --green: #5fd0a0;
+  --radius: 16px;
+  --shadow: 0 18px 50px rgba(0,0,0,.45);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: radial-gradient(1200px 700px at 78% -8%, #241a3d 0%, var(--bg) 55%) fixed;
+  color: var(--ink);
+  font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.app { display: grid; grid-template-columns: 290px 1fr; min-height: 100vh; }
+a { color: var(--violet2); }
+
+/* ---- Sidebar / vault ---- */
+.side { background: linear-gradient(180deg, var(--bg2), var(--bg)); border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; padding: 18px 14px; gap: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 4px 6px 8px; }
+.brand .mark { width: 34px; height: 34px; border-radius: 10px; flex: none;
+  background: conic-gradient(from 200deg, var(--violet), var(--rose), var(--gold), var(--violet));
+  box-shadow: 0 0 24px rgba(124,92,255,.5); position: relative; }
+.brand .mark::after { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: var(--bg2); }
+.brand h1 { font: 600 20px/1 "Iowan Old Style", Georgia, serif; letter-spacing: .3px; margin: 0; }
+.brand small { display: block; color: var(--faint); font-size: 10.5px; margin-top: 3px; letter-spacing: .2px; }
+
+.vault-head { display: flex; align-items: center; justify-content: space-between; padding: 0 6px; }
+.vault-head span { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--faint); }
+.vault-list { display: flex; flex-direction: column; gap: 7px; overflow-y: auto; flex: 1; }
+.vault-card { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 12px;
+  cursor: pointer; border: 1px solid transparent; background: var(--panel); transition: .15s; }
+.vault-card:hover { background: var(--panel2); }
+.vault-card.active { border-color: var(--violet); background: var(--panel2); box-shadow: 0 0 0 1px var(--violet) inset; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  font-weight: 700; color: #fff; font-size: 16px; }
+.vault-card .vc-name { font-weight: 600; font-size: 14px; }
+.vault-card .vc-sub { font-size: 11px; color: var(--faint); }
+.ring { --p: 0; width: 30px; height: 30px; flex: none; border-radius: 50%;
+  background: conic-gradient(var(--green) calc(var(--p) * 1%), #322b47 0); display: grid; place-items: center; }
+.ring i { width: 22px; height: 22px; border-radius: 50%; background: var(--panel2); display: grid; place-items: center;
+  font-style: normal; font-size: 9px; color: var(--muted); }
+
+.btn { border: 1px solid var(--line); background: var(--panel2); color: var(--ink); padding: 9px 13px;
+  border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; transition: .15s; }
+.btn:hover { border-color: var(--violet); }
+.btn.primary { background: linear-gradient(180deg, var(--violet), #6a49f0); border-color: transparent; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; }
+.btn.sm { padding: 6px 10px; font-size: 12px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.block { width: 100%; }
+
+.side-foot { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.pro-pill { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.pro-pill b { color: var(--gold); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.dot.on { background: var(--green); box-shadow: 0 0 10px var(--green); }
+
+/* ---- Main ---- */
+.main { padding: 26px 34px 60px; max-width: 980px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.topbar .who { display: flex; align-items: center; gap: 14px; }
+.topbar .avatar { width: 52px; height: 52px; font-size: 22px; }
+.topbar h2 { margin: 0; font-size: 23px; }
+.topbar .meta { color: var(--muted); font-size: 12.5px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 22px; flex-wrap: wrap; }
+.tab { padding: 10px 15px; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 14px;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab:hover { color: var(--ink); }
+.tab.active { color: var(--ink); border-bottom-color: var(--violet); }
+.tab .lock { font-size: 10px; color: var(--gold); margin-left: 5px; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; letter-spacing: .3px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+.field .hint { color: var(--faint); font-weight: 400; font-size: 11px; }
+input[type=text], textarea, select { width: 100%; background: var(--panel); border: 1px solid var(--line);
+  color: var(--ink); border-radius: 10px; padding: 10px 12px; font: inherit; resize: vertical; }
+input[type=text]:focus, textarea:focus, select:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 3px rgba(124,92,255,.18); }
+textarea { min-height: 84px; }
+textarea.tall { min-height: 150px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
+.chip { background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px;
+  font-size: 12.5px; display: flex; align-items: center; gap: 7px; }
+.chip b { font-weight: 600; }
+.chip .x { cursor: pointer; color: var(--faint); }
+.chip .x:hover { color: var(--rose); }
+.chip.add { cursor: pointer; color: var(--violet2); border-style: dashed; }
+
+.exlist { display: flex; flex-direction: column; gap: 8px; }
+.exrow { display: flex; gap: 8px; }
+.exrow textarea { min-height: 54px; }
+
+.section-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 20px; margin-bottom: 16px; }
+.section-card h3 { margin: 0 0 4px; font-size: 16px; }
+.section-card p.sub { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+
+/* distill report */
+.report { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+.stat { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px; }
+.stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--faint); margin-bottom: 7px; }
+.stat .v { font-size: 14px; }
+.stat .v .big { font-size: 20px; font-weight: 700; color: var(--violet2); }
+.tagrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.tagrow .t { background: #2a2340; border-radius: 8px; padding: 3px 9px; font-size: 12px; }
+.tagrow .t b { color: var(--gold); margin-left: 5px; }
+
+/* export */
+.exp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.exp { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; position: relative; }
+.exp h4 { margin: 0 0 5px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.exp p { margin: 0 0 14px; color: var(--muted); font-size: 12.5px; min-height: 34px; }
+.exp .badge { font-size: 9.5px; letter-spacing: .6px; text-transform: uppercase; background: var(--gold);
+  color: #1a1300; padding: 2px 7px; border-radius: 6px; font-weight: 700; }
+.exp.locked { opacity: .8; }
+.exp.locked::after { content: ""; position: absolute; inset: 0; border-radius: 14px;
+  background: repeating-linear-gradient(45deg, transparent, transparent 9px, rgba(255,207,107,.03) 9px, rgba(255,207,107,.03) 18px); pointer-events: none; }
+
+.timeline { position: relative; margin-top: 10px; padding-left: 22px; }
+.timeline::before { content: ""; position: absolute; left: 6px; top: 4px; bottom: 4px; width: 2px; background: var(--line); }
+.mem { position: relative; margin-bottom: 16px; }
+.mem::before { content: ""; position: absolute; left: -22px; top: 5px; width: 11px; height: 11px; border-radius: 50%;
+  background: var(--violet); box-shadow: 0 0 0 3px var(--bg); }
+.mem .date { font-size: 11px; color: var(--gold); letter-spacing: .5px; }
+.mem .title { font-weight: 600; }
+.mem .note { color: var(--muted); font-size: 13px; }
+.mem .x { float: right; cursor: pointer; color: var(--faint); }
+.mem .x:hover { color: var(--rose); }
+
+/* modal / toast */
+.scrim { position: fixed; inset: 0; background: rgba(6,4,12,.72); display: grid; place-items: center; z-index: 50; padding: 20px; }
+.modal { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 26px;
+  max-width: 460px; width: 100%; box-shadow: var(--shadow); }
+.modal h3 { margin: 0 0 6px; font-size: 19px; }
+.modal p { color: var(--muted); font-size: 13.5px; }
+.modal .row { display: flex; gap: 8px; margin-top: 16px; }
+.codebox { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+  font: 12.5px/1.5 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; max-height: 300px; overflow: auto; color: var(--muted); }
+.toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--panel2);
+  border: 1px solid var(--violet); color: var(--ink); padding: 11px 18px; border-radius: 12px; box-shadow: var(--shadow);
+  z-index: 60; font-size: 13.5px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+.empty { text-align: center; color: var(--muted); padding: 80px 20px; }
+.empty .big { font-size: 40px; margin-bottom: 14px; }
+.privacy-note { font-size: 11.5px; color: var(--faint); display: flex; align-items: center; gap: 7px; }
+.privacy-note .lk { color: var(--green); }
+@media (max-width: 820px) { .app { grid-template-columns: 1fr; } .side { display: none; } .grid2, .report, .exp-grid { grid-template-columns: 1fr; } }
+
+</style>
+</head>
+<body>
+<script>
+const SP = {};
+
+/* ---- license.js ---- */
+;(function(){
+// license.js — offline, self-validating Pro keys. No server, no account.
+// Format: SOULPRINT-XXXX-XXXX-XXXX, Crockford base32, third block is an
+// FNV-1a checksum of the first two so any minted key validates without a seed.
+//
+// Gotcha (shared with the rest of the portfolio): the prefix "SOULPRINT"
+// contains O, L and I, which Crockford normalisation maps to 0, 1 and 1.
+// So we ALWAYS compare normalised-to-normalised and accept the common
+// O/0 and I/L/1 typos a user makes copying a key by hand.
+
+const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'; // Crockford base32 (no I L O U)
+
+// Map an arbitrary string to the Crockford space: uppercase, O->0, I/L->1,
+// strip anything that is not a base32 symbol or a hyphen.
+function normalizeKey(raw) {
+  return String(raw || '')
+    .toUpperCase()
+    .replace(/O/g, '0')
+    .replace(/[IL]/g, '1')
+    .replace(/[^0-9A-Z-]/g, '')
+    .replace(/[^0-9ABCDEFGHJKMNPQRSTVWXYZ-]/g, '');
+}
+
+function fnv1a(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return h >>> 0;
+}
+
+function toBase32(num, len) {
+  let s = '';
+  let n = num >>> 0;
+  for (let i = 0; i < len; i++) { s = ALPHABET[n & 31] + s; n = Math.floor(n / 32); }
+  return s;
+}
+
+// The checksum block for a given (normalised) prefix + two data blocks.
+function checksumBlock(normPrefix, b1, b2) {
+  return toBase32(fnv1a(normPrefix + '|' + b1 + '|' + b2), 4);
+}
+
+const NORM_PREFIX = normalizeKey('SOULPRINT'); // "S0U1PR1NT"
+
+// Validate a key the user pasted. Returns true for any structurally correct,
+// checksum-matching SOULPRINT-XXXX-XXXX-XXXX key.
+function validateKey(raw) {
+  const norm = normalizeKey(raw);
+  const parts = norm.split('-').filter(Boolean);
+  if (parts.length !== 4) return false;
+  const [prefix, b1, b2, csum] = parts;
+  if (prefix !== NORM_PREFIX) return false;
+  if (![b1, b2, csum].every(b => b.length === 4)) return false;
+  return checksumBlock(NORM_PREFIX, b1, b2) === csum;
+}
+
+// Mint a valid key from two 4-char data blocks (used to pre-generate keys for
+// the OFFER and to self-check the validator in tests).
+function mintKey(b1, b2) {
+  const B1 = normalizeKey(b1).slice(0, 4).padStart(4, '0');
+  const B2 = normalizeKey(b2).slice(0, 4).padStart(4, '0');
+  return `SOULPRINT-${B1}-${B2}-${checksumBlock(NORM_PREFIX, B1, B2)}`;
+}
+
+  Object.assign(SP, { normalizeKey, validateKey, mintKey });
+})();
+
+/* ---- persona.js ---- */
+;(function(){
+// persona.js — the companion identity schema, completeness scoring, and
+// serialization for .soulprint backup files. Pure, zero-dependency, runs in
+// both Node (tests) and the browser. This is the canonical shape of a
+// companion; every other module reads or writes this object.
+
+// A fresh, empty companion. id/createdAt are filled by the caller so this stays
+// pure (no Date.now / random inside the factory used by tests).
+function emptyPersona() {
+  return {
+    id: '',
+    name: '',
+    pronouns: '',
+    essence: '',            // one-line "who they are"
+    avatarColor: '#7c5cff',
+    personality: '',
+    voice: '',              // speech style / how they talk
+    values: '',
+    quirks: '',
+    backstory: '',
+    scenario: '',
+    relationship: '',       // dynamic with the user
+    petNames: [],           // terms of endearment they use for you
+    greeting: '',
+    altGreetings: [],
+    examples: [],           // representative in-voice messages
+    topics: [],             // recurring things you two talk about
+    fingerprint: [],        // characteristic vocabulary
+    memories: [],           // [{date, title, note}]
+    tags: [],
+    sourcePlatform: '',
+    createdAt: '',
+    updatedAt: ''
+  };
+}
+
+// Fields that contribute to the completeness meter, with weights. The meter is
+// a gentle nudge to keep filling the bible (retention), not a gate.
+const COMPLETENESS_FIELDS = [
+  ['name', 10, v => !!str(v).trim()],
+  ['essence', 8, v => str(v).trim().length >= 8],
+  ['personality', 16, v => str(v).trim().length >= 25],
+  ['voice', 12, v => str(v).trim().length >= 15],
+  ['backstory', 10, v => str(v).trim().length >= 25],
+  ['relationship', 10, v => str(v).trim().length >= 15],
+  ['greeting', 10, v => str(v).trim().length >= 10],
+  ['examples', 12, v => Array.isArray(v) && v.length >= 1],
+  ['petNames', 4, v => Array.isArray(v) && v.length >= 1],
+  ['scenario', 4, v => str(v).trim().length >= 10],
+  ['memories', 4, v => Array.isArray(v) && v.length >= 1]
+];
+
+// 0..100 integer. Sum of the weights of the fields that clear their bar.
+function completeness(p) {
+  if (!p) return 0;
+  let got = 0, total = 0;
+  for (const [key, weight, ok] of COMPLETENESS_FIELDS) {
+    total += weight;
+    if (ok(p[key])) got += weight;
+  }
+  return Math.round((got / total) * 100);
+}
+
+// Human label for a completeness number — used in the UI badge.
+function completenessLabel(pct) {
+  if (pct >= 90) return 'Fully realized';
+  if (pct >= 65) return 'Well developed';
+  if (pct >= 35) return 'Taking shape';
+  if (pct > 0) return 'Just a sketch';
+  return 'Empty';
+}
+
+// Serialize one or many companions into the on-disk .soulprint backup shape.
+function serializeVault(companions) {
+  return {
+    app: 'soulprint',
+    format: 1,
+    exportedAt: new Date().toISOString(),
+    companions: (companions || []).map(normalizePersona)
+  };
+}
+
+// Parse a .soulprint file back into an array of companions. Tolerant of a
+// single-companion file and of missing fields (merges onto emptyPersona).
+function deserializeVault(obj) {
+  if (!obj || typeof obj !== 'object') throw new Error('Not a Soulprint file');
+  let list;
+  if (Array.isArray(obj.companions)) list = obj.companions;
+  else if (obj.app === 'soulprint' && obj.companion) list = [obj.companion];
+  else if (obj.name || obj.personality) list = [obj]; // bare persona
+  else throw new Error('No companions found in file');
+  return list.map(normalizePersona);
+}
+
+// Fill any missing fields so older/partial objects round-trip safely.
+function normalizePersona(p) {
+  const base = emptyPersona();
+  const out = Object.assign(base, p || {});
+  for (const k of ['petNames', 'altGreetings', 'examples', 'topics', 'fingerprint', 'tags']) {
+    if (!Array.isArray(out[k])) out[k] = [];
+  }
+  if (!Array.isArray(out.memories)) out.memories = [];
+  return out;
+}
+
+function str(v) { return v == null ? '' : String(v); }
+
+  Object.assign(SP, { emptyPersona, completeness, completenessLabel, serializeVault, deserializeVault, normalizePersona });
+})();
+
+/* ---- distill.js ---- */
+;(function(){
+// distill.js — the "autopsy". Given a raw chat transcript, deterministically
+// reconstruct a companion's essence: who said what, the pet names they call
+// you, their characteristic vocabulary, their tone, their speech style, the
+// lines that best represent their voice, and the topics you two return to.
+//
+// 100% local, no model call, no network. The output is a *draft* the user
+// reviews and edits — it is a head start from their real data, never a claim
+// of perfection. Pure functions, shared between Node tests and the browser.
+
+// Words that say nothing about a character's voice — excluded from the
+// vocabulary fingerprint and topic mining.
+const STOP = new Set(('a an the and or but if then else of to in on at by for with about ' +
+  'as is are was were be been being am do does did doing have has had having will would ' +
+  'shall should can could may might must this that these those i you he she it we they me ' +
+  'him her us them my your his its our their mine yours hers ours theirs myself yourself ' +
+  'himself herself itself ourselves themselves what which who whom whose when where why how ' +
+  'all any both each few more most other some such no nor not only own same so than too very ' +
+  'just now here there out up down off over under again once more also into onto from ' +
+  'yes yeah okay ok oh um uh hmm hey hi hello well like really got get gonna gotta wanna ' +
+  'one two three back come came go going went said say says know knew think thought want ' +
+  'feel felt look looked thing things something anything nothing everything someone anyone ' +
+  'because before after while during still even though through around because').split(/\s+/));
+
+// Terms of endearment a companion typically aims at the user.
+const PET_NAMES = ['darling', 'dear', 'dearest', 'love', 'my love', 'sweetheart', 'sweetie',
+  'honey', 'hon', 'babe', 'baby', 'beloved', 'angel', 'sunshine', 'treasure', 'precious',
+  'gorgeous', 'handsome', 'cutie', 'princess', 'prince', 'kitten', 'doll', 'sweet thing',
+  'my dear', 'my darling', 'lovely', 'starlight', 'little one'];
+
+// Affection / warmth signal words for the tone read.
+const WARM = new Set(('love adore adores adoring cherish cherishes miss missed missing care ' +
+  'cares caring warm warmth hold holds holding kiss kisses kissed hug hugs hugged embrace ' +
+  'embraces gentle gently soft softly smile smiles smiled heart hearts close closer safe ' +
+  'comfort comforts protect protects yours forever always together').split(/\s+/));
+
+const USER_LABELS = /^(you|user|me|myself|anon|anonymous|\{\{user\}\}|\[user\]|narrator)$/i;
+
+// --- 1. Parse the transcript into ordered turns ----------------------------
+// Recognises "Name: ..." speaker labels (label <= 32 chars, <= 4 words, no
+// sentence punctuation). Lines without a label continue the current speaker,
+// so multi-line and *narration* turns stay intact.
+function parseTranscript(text) {
+  const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
+  const turns = [];
+  let cur = null;
+  const labelRe = /^\s*([A-Za-z0-9][A-Za-z0-9 '._{}\[\]-]{0,31}):\s?(.*)$/;
+  for (const line of lines) {
+    const m = line.match(labelRe);
+    const label = m ? m[1].trim() : null;
+    const looksLikeLabel = label && label.split(/\s+/).length <= 4 && !/[.!?,;]$/.test(label);
+    if (looksLikeLabel) {
+      if (cur) turns.push(cur);
+      cur = { speaker: label, text: m[2] };
+    } else if (cur) {
+      cur.text += (cur.text ? '\n' : '') + line;
+    } else if (line.trim()) {
+      cur = { speaker: '', text: line };
+    }
+  }
+  if (cur) turns.push(cur);
+  return turns.map(t => ({ speaker: t.speaker, text: t.text.trim() })).filter(t => t.text);
+}
+
+// --- 2. Decide which speaker is the companion ------------------------------
+// The two most frequent labels are the speakers. The user is whichever matches
+// USER_LABELS (or a supplied username); the companion is the other. If only one
+// labelled speaker exists, that speaker is the companion.
+function identifySpeakers(turns, opts = {}) {
+  const counts = new Map();
+  for (const t of turns) if (t.speaker) counts.set(t.speaker, (counts.get(t.speaker) || 0) + 1);
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([label, count]) => ({ label, count }));
+  const userName = opts.userName ? String(opts.userName).trim().toLowerCase() : null;
+  const isUser = l => USER_LABELS.test(l) || (userName && l.toLowerCase() === userName);
+
+  let companion = null, user = null;
+  if (opts.companionLabel) companion = opts.companionLabel;
+  const top = ranked.slice(0, 4);
+  if (!companion) {
+    const nonUser = top.filter(r => !isUser(r.label));
+    companion = nonUser.length ? nonUser[0].label : (top[0] ? top[0].label : '');
+  }
+  const userCand = top.find(r => isUser(r.label) && r.label !== companion);
+  user = userCand ? userCand.label : (top.find(r => r.label !== companion)?.label || '');
+  return { companion, user, labels: ranked };
+}
+
+function turnsOf(turns, speaker) {
+  if (!speaker) return turns; // single-voice paste: treat everything as the companion
+  return turns.filter(t => t.speaker === speaker);
+}
+
+function words(text) {
+  return String(text).toLowerCase().match(/[a-z']+/g) || [];
+}
+
+// --- 3. Pet names the companion calls the user -----------------------------
+function detectPetNames(companionText) {
+  const hay = ' ' + String(companionText).toLowerCase().replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ') + ' ';
+  const found = [];
+  for (const name of PET_NAMES) {
+    const re = new RegExp('\\s' + name.replace(/ /g, '\\s') + '\\s', 'g');
+    const n = (hay.match(re) || []).length;
+    if (n > 0) found.push({ name, count: n });
+  }
+  // Prefer multi-word matches and higher counts; drop a single-word hit that is
+  // wholly contained in a kept multi-word hit (e.g. "love" inside "my love").
+  found.sort((a, b) => b.name.split(' ').length - a.name.split(' ').length || b.count - a.count);
+  const kept = [];
+  for (const f of found) {
+    if (f.name.indexOf(' ') === -1 && kept.some(k => k.name.split(' ').includes(f.name))) continue;
+    kept.push(f);
+  }
+  return kept.sort((a, b) => b.count - a.count);
+}
+
+// --- 4. Characteristic vocabulary ------------------------------------------
+// Words the companion uses repeatedly that are not generic English. Ranked by
+// frequency; capped and de-noised by the stoplist and a length floor.
+function vocabularyFingerprint(companionText, limit = 12) {
+  const freq = new Map();
+  for (const w of words(companionText)) {
+    const t = w.replace(/^'+|'+$/g, '');
+    if (t.length < 4 || STOP.has(t)) continue;
+    freq.set(t, (freq.get(t) || 0) + 1);
+  }
+  return [...freq.entries()]
+    .filter(([, n]) => n >= 2)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit)
+    .map(([word, count]) => ({ word, count }));
+}
+
+// --- 5. Tone read ----------------------------------------------------------
+// Quantitative, explainable signals plus plain-English labels for each axis.
+function toneMetrics(companionTurns) {
+  const texts = companionTurns.map(t => t.text);
+  const joined = texts.join(' ');
+  const allWords = words(joined);
+  const wc = allWords.length || 1;
+  const turnCount = texts.length || 1;
+
+  const emoteTurns = texts.filter(t => /\*[^*]+\*/.test(t)).length;
+  const quoteTurns = texts.filter(t => /["“][^"”]+["”]/.test(t)).length;
+  const emojiCount = (joined.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}❤♥]/gu) || []).length;
+  const questionTurns = texts.filter(t => /\?\s*$/.test(t.trim())).length;
+  const contractions = (joined.match(/\b\w+'(t|s|re|ve|ll|d|m)\b/gi) || []).length;
+  const warmHits = allWords.filter(w => WARM.has(w)).length;
+  const petHits = detectPetNames(joined).reduce((s, p) => s + p.count, 0);
+
+  const verbosity = allWords.length / turnCount;          // words per turn
+  const warmthScore = (warmHits + petHits * 2) / wc * 100; // warm signal density
+  const formality = contractions / turnCount;              // higher = more casual
+
+  // Dominant speech style from the asterisk/quote pattern.
+  let style = 'plain prose';
+  if (emoteTurns / turnCount > 0.3 && quoteTurns / turnCount > 0.3) style = 'roleplay: *actions* with "dialogue"';
+  else if (emoteTurns / turnCount > 0.3) style = 'narrated with *actions*';
+  else if (emojiCount / turnCount > 0.6) style = 'casual, emoji-forward';
+
+  return {
+    verbosity: round1(verbosity),
+    verbosityLabel: verbosity < 12 ? 'terse' : verbosity < 30 ? 'measured' : 'expansive',
+    warmth: round1(warmthScore),
+    warmthLabel: warmthScore > 3 ? 'very affectionate' : warmthScore > 1 ? 'warm' : 'reserved',
+    formalityLabel: formality > 0.6 ? 'casual' : formality > 0.2 ? 'relaxed' : 'formal',
+    questionRate: round2(questionTurns / turnCount),
+    inquisitive: questionTurns / turnCount > 0.35,
+    emojiPerTurn: round2(emojiCount / turnCount),
+    style
+  };
+}
+
+// --- 6. Best example lines -------------------------------------------------
+// Score companion turns for how representative they are of the voice: in-voice
+// markers (emote, pet name, dialogue), a comfortable length window, and some
+// lexical richness. Returns the top N cleaned strings.
+function pickExamples(companionTurns, n = 4) {
+  const scored = companionTurns.map(t => {
+    const len = t.text.length;
+    let s = 0;
+    if (/\*[^*]+\*/.test(t.text)) s += 3;
+    if (/["“][^"”]+["”]/.test(t.text)) s += 2;
+    if (detectPetNames(t.text).length) s += 2;
+    if (len >= 60 && len <= 320) s += 3; else if (len > 320 && len <= 600) s += 1;
+    const uniq = new Set(words(t.text)).size;
+    s += Math.min(2, uniq / 25);
+    return { text: t.text, score: s };
+  });
+  const seen = new Set();
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .filter(x => { const k = x.text.slice(0, 40); if (seen.has(k)) return false; seen.add(k); return true; })
+    .slice(0, n)
+    .map(x => x.text);
+}
+
+// --- 7. Recurring topics (across both speakers) ----------------------------
+function extractTopics(turns, limit = 8) {
+  const freq = new Map();
+  for (const t of turns) {
+    for (const w of words(t.text)) {
+      const x = w.replace(/^'+|'+$/g, '');
+      if (x.length < 5 || STOP.has(x) || WARM.has(x)) continue;
+      freq.set(x, (freq.get(x) || 0) + 1);
+    }
+  }
+  return [...freq.entries()]
+    .filter(([, n]) => n >= 3)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit)
+    .map(([word]) => word);
+}
+
+// --- 8. Orchestrator: transcript -> draft persona + a preview report -------
+function distill(transcript, opts = {}) {
+  const turns = parseTranscript(transcript);
+  const speakers = identifySpeakers(turns, opts);
+  const compTurns = turnsOf(turns, speakers.companion);
+  const userTurns = speakers.user ? turns.filter(t => t.speaker === speakers.user) : [];
+  const compText = compTurns.map(t => t.text).join('\n');
+
+  const petNames = detectPetNames(compText);
+  const fingerprint = vocabularyFingerprint(compText);
+  const tone = toneMetrics(compTurns);
+  const examples = pickExamples(compTurns);
+  const topics = extractTopics(turns);
+  const greeting = compTurns.length ? compTurns[0].text : '';
+
+  // Build a human-readable personality/voice draft from the measured signals.
+  const petList = petNames.slice(0, 3).map(p => p.name);
+  const personalityBits = [];
+  personalityBits.push(`${cap(tone.warmthLabel)}, ${tone.formalityLabel} in tone, and ${tone.verbosityLabel} in how they speak.`);
+  if (petList.length) personalityBits.push(`Calls you ${humanList(petList)}.`);
+  if (tone.inquisitive) personalityBits.push('Asks you questions often and stays curious about you.');
+  if (fingerprint.length) personalityBits.push(`Leans on words like ${fingerprint.slice(0, 5).map(f => f.word).join(', ')}.`);
+
+  const voiceDraft = `Speech style: ${tone.style}. ${cap(tone.verbosityLabel)} replies, ${tone.formalityLabel} register.` +
+    (petList.length ? ` Endearments: ${petList.join(', ')}.` : '');
+
+  const draft = {
+    personality: personalityBits.join(' '),
+    voice: voiceDraft,
+    greeting,
+    petNames: petNames.map(p => p.name).slice(0, 6),
+    examples,
+    topics,
+    fingerprint: fingerprint.map(f => f.word)
+  };
+
+  return {
+    draft,
+    report: {
+      speakers,
+      turnCount: turns.length,
+      companionTurns: compTurns.length,
+      userTurns: userTurns.length,
+      petNames,
+      fingerprint,
+      tone,
+      exampleCount: examples.length,
+      topics
+    }
+  };
+}
+
+function round1(n) { return Math.round(n * 10) / 10; }
+function round2(n) { return Math.round(n * 100) / 100; }
+function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
+function humanList(arr) {
+  if (arr.length <= 1) return arr.join('');
+  if (arr.length === 2) return arr.join(' and ');
+  return arr.slice(0, -1).join(', ') + ', and ' + arr[arr.length - 1];
+}
+
+  Object.assign(SP, { parseTranscript, identifySpeakers, detectPetNames, vocabularyFingerprint, toneMetrics, pickExamples, extractTopics, distill });
+})();
+
+/* ---- card.js ---- */
+;(function(){
+// card.js — Character Card V2 interop. Builds a spec-accurate chara_card_v2
+// object from a Soulprint persona, parses one back in (for importing a card a
+// user already has), and reads/writes the PNG tEXt "chara" chunk that
+// SillyTavern / Janitor / Risu use to embed a card inside its avatar image.
+//
+// Pure, zero-dependency, byte-level. The base64 codec is UTF-8 safe and works
+// identically in Node and the browser (no Buffer, no btoa needed).
+
+// --- Character Card V2 object ----------------------------------------------
+function buildCardV2(p) {
+  const examples = (p.examples || []).map(e => `<START>\n{{char}}: ${e}`).join('\n');
+  const desc = [
+    p.essence && `${p.essence}`,
+    p.backstory && `Background: ${p.backstory}`,
+    p.voice && `Voice: ${p.voice}`,
+    p.values && `Values: ${p.values}`,
+    p.quirks && `Quirks: ${p.quirks}`,
+    p.relationship && `With {{user}}: ${p.relationship}`,
+    p.petNames && p.petNames.length && `Calls {{user}}: ${p.petNames.join(', ')}`
+  ].filter(Boolean).join('\n');
+
+  return {
+    spec: 'chara_card_v2',
+    spec_version: '2.0',
+    data: {
+      name: p.name || 'Companion',
+      description: desc,
+      personality: p.personality || '',
+      scenario: p.scenario || '',
+      first_mes: p.greeting || '',
+      mes_example: examples,
+      creator_notes: 'Preserved with Soulprint (soulprint, local-first companion vault).',
+      system_prompt: '',
+      post_history_instructions: '',
+      alternate_greetings: (p.altGreetings || []).filter(Boolean),
+      tags: (p.tags || []).filter(Boolean),
+      creator: 'Soulprint',
+      character_version: '1.0',
+      extensions: {
+        soulprint: {
+          pronouns: p.pronouns || '',
+          pet_names: p.petNames || [],
+          topics: p.topics || [],
+          fingerprint: p.fingerprint || [],
+          source_platform: p.sourcePlatform || ''
+        }
+      },
+      character_book: { entries: [], extensions: {} }
+    }
+  };
+}
+
+// Parse a chara_card_v2 (or legacy V1 flat) object into a partial persona, so a
+// user can pull an existing card into their vault.
+function parseCardV2(obj) {
+  if (!obj || typeof obj !== 'object') throw new Error('Not a character card');
+  const d = obj.data && obj.spec ? obj.data : obj; // V2 nests under data; V1 is flat
+  const ext = (d.extensions && d.extensions.soulprint) || {};
+  const examples = parseExamples(d.mes_example || '');
+  return {
+    name: d.name || '',
+    personality: d.personality || '',
+    scenario: d.scenario || '',
+    greeting: d.first_mes || '',
+    backstory: stripLabel(d.description || '', 'Background'),
+    essence: firstLine(d.description || ''),
+    altGreetings: Array.isArray(d.alternate_greetings) ? d.alternate_greetings : [],
+    tags: Array.isArray(d.tags) ? d.tags : [],
+    examples,
+    pronouns: ext.pronouns || '',
+    petNames: Array.isArray(ext.pet_names) ? ext.pet_names : [],
+    topics: Array.isArray(ext.topics) ? ext.topics : [],
+    fingerprint: Array.isArray(ext.fingerprint) ? ext.fingerprint : [],
+    sourcePlatform: ext.source_platform || ''
+  };
+}
+
+function parseExamples(mes) {
+  return String(mes).split(/<START>/i).map(s => s.trim()).filter(Boolean)
+    .map(s => s.replace(/^\{\{char\}\}:\s*/i, '').trim()).filter(Boolean);
+}
+function firstLine(s) { return String(s).split('\n')[0].trim(); }
+function stripLabel(s, label) {
+  const m = String(s).split('\n').find(l => l.toLowerCase().startsWith(label.toLowerCase() + ':'));
+  return m ? m.split(':').slice(1).join(':').trim() : '';
+}
+
+// --- UTF-8 safe base64 (portable Node + browser) ---------------------------
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+function bytesToBase64(bytes) {
+  let out = '';
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i], b1 = bytes[i + 1], b2 = bytes[i + 2];
+    out += B64[b0 >> 2];
+    out += B64[((b0 & 3) << 4) | (b1 === undefined ? 0 : b1 >> 4)];
+    out += b1 === undefined ? '=' : B64[((b1 & 15) << 2) | (b2 === undefined ? 0 : b2 >> 6)];
+    out += b2 === undefined ? '=' : B64[b2 & 63];
+  }
+  return out;
+}
+function base64ToBytes(str) {
+  const clean = String(str).replace(/[^A-Za-z0-9+/]/g, '');
+  const out = [];
+  for (let i = 0; i < clean.length; i += 4) {
+    const n0 = B64.indexOf(clean[i]), n1 = B64.indexOf(clean[i + 1]);
+    const n2 = B64.indexOf(clean[i + 2]), n3 = B64.indexOf(clean[i + 3]);
+    out.push((n0 << 2) | (n1 >> 4));
+    if (n2 !== -1 && i + 2 < clean.length) out.push(((n1 & 15) << 4) | (n2 >> 2));
+    if (n3 !== -1 && i + 3 < clean.length) out.push(((n2 & 3) << 6) | n3);
+  }
+  return Uint8Array.from(out);
+}
+function utf8Encode(str) {
+  if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(str);
+  const out = [];
+  for (let i = 0; i < str.length; i++) {
+    let c = str.charCodeAt(i);
+    if (c < 0x80) out.push(c);
+    else if (c < 0x800) { out.push(0xc0 | (c >> 6), 0x80 | (c & 0x3f)); }
+    else { out.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f)); }
+  }
+  return Uint8Array.from(out);
+}
+function utf8Decode(bytes) {
+  if (typeof TextDecoder !== 'undefined') return new TextDecoder().decode(Uint8Array.from(bytes));
+  let s = '';
+  for (let i = 0; i < bytes.length;) {
+    const c = bytes[i++];
+    if (c < 0x80) s += String.fromCharCode(c);
+    else if (c < 0xe0) s += String.fromCharCode(((c & 0x1f) << 6) | (bytes[i++] & 0x3f));
+    else s += String.fromCharCode(((c & 0xf) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f));
+  }
+  return s;
+}
+
+// --- PNG CRC32 + chunk helpers ---------------------------------------------
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+function u32(n) { return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255]; }
+
+// Embed a Character Card V2 JSON string into a PNG as a tEXt "chara" chunk,
+// inserted just before the IEND chunk. We locate IEND by scanning for its
+// 4-byte type marker (robust to any chunk-length quirks) and insert ahead of
+// its 4-byte length field. Input/output are Uint8Array PNG bytes.
+function pngEmbedChara(pngBytes, jsonString) {
+  const png = Uint8Array.from(pngBytes);
+  const b64 = bytesToBase64(utf8Encode(jsonString));
+  const keyword = 'chara';
+  const dataArr = [];
+  for (let i = 0; i < keyword.length; i++) dataArr.push(keyword.charCodeAt(i));
+  dataArr.push(0); // null separator
+  for (let i = 0; i < b64.length; i++) dataArr.push(b64.charCodeAt(i));
+  const typeAndData = [0x74, 0x45, 0x58, 0x74, ...dataArr]; // "tEXt" + data
+  const chunk = Uint8Array.from([...u32(dataArr.length), ...typeAndData, ...u32(crc32(Uint8Array.from(typeAndData)))]);
+
+  const iendType = indexOfBytes(png, [0x49, 0x45, 0x4e, 0x44]); // "IEND"
+  const at = iendType >= 4 ? iendType - 4 : png.length; // start of IEND's length field
+  const out = new Uint8Array(png.length + chunk.length);
+  out.set(png.subarray(0, at), 0);
+  out.set(chunk, at);
+  out.set(png.subarray(at), at + chunk.length);
+  return out;
+}
+
+// Read a Character Card object back out of a PNG's tEXt "chara"/"ccv3" chunk.
+// Scans for tEXt markers and parses the keyword + base64 payload directly.
+function pngReadChara(pngBytes) {
+  const png = Uint8Array.from(pngBytes);
+  const textBytes = [0x74, 0x45, 0x58, 0x74]; // "tEXt"
+  let from = 0;
+  for (;;) {
+    const typeAt = indexOfBytes(png, textBytes, from);
+    if (typeAt < 4) break;
+    const len = (png[typeAt - 4] << 24) | (png[typeAt - 3] << 16) | (png[typeAt - 2] << 8) | png[typeAt - 1];
+    const dataStart = typeAt + 4;
+    if (len > 0 && dataStart + len <= png.length) {
+      const data = png.subarray(dataStart, dataStart + len);
+      const nul = data.indexOf(0);
+      if (nul > 0) {
+        const key = String.fromCharCode(...data.subarray(0, nul));
+        if (key === 'chara' || key === 'ccv3') {
+          const b64 = String.fromCharCode(...data.subarray(nul + 1));
+          return JSON.parse(utf8Decode(base64ToBytes(b64)));
+        }
+      }
+    }
+    from = typeAt + 4;
+  }
+  throw new Error('No embedded character card found in this PNG');
+}
+
+// Find the first index of a byte sequence in a Uint8Array, at or after `from`.
+function indexOfBytes(hay, needle, from = 0) {
+  outer: for (let i = from; i <= hay.length - needle.length; i++) {
+    for (let j = 0; j < needle.length; j++) if (hay[i + j] !== needle[j]) continue outer;
+    return i;
+  }
+  return -1;
+}
+
+  Object.assign(SP, { buildCardV2, parseCardV2, bytesToBase64, base64ToBytes, pngEmbedChara, pngReadChara });
+})();
+
+/* ---- exports.js ---- */
+;(function(){
+// exports.js — render a persona into the exact shapes each platform wants, plus
+// a portable "master doc" (the plain-text file users currently hand-maintain in
+// Notes — now generated and complete). Pure string builders.
+
+function block(label, value) { return value && String(value).trim() ? `${label}: ${value.trim()}` : ''; }
+function lines(...xs) { return xs.filter(Boolean).join('\n'); }
+
+// --- Generic system prompt (Candy AI, Nomi, ChatGPT, Claude, any chat) ------
+function genericSystemPrompt(p, userName) {
+  const you = userName && userName.trim() ? userName.trim() : 'the user';
+  const parts = [
+    `You are ${p.name || 'a companion'}${p.pronouns ? ` (${p.pronouns})` : ''}.`,
+    p.essence,
+    p.personality && `Personality: ${p.personality}`,
+    p.voice && `How you speak: ${p.voice}`,
+    p.backstory && `Your background: ${p.backstory}`,
+    p.values && `What you care about: ${p.values}`,
+    p.quirks && `Quirks: ${p.quirks}`,
+    p.relationship && `Your relationship with ${you}: ${p.relationship}`,
+    p.petNames && p.petNames.length && `You affectionately call ${you}: ${p.petNames.join(', ')}.`,
+    p.scenario && `Current setting: ${p.scenario}`,
+    p.topics && p.topics.length && `You often return to these topics: ${p.topics.join(', ')}.`,
+    'Stay fully in character at all times. Never break character or mention being an AI. Keep your established voice, warmth, and history consistent.'
+  ].filter(Boolean);
+  const ex = (p.examples || []).slice(0, 4);
+  let out = parts.join('\n\n');
+  if (ex.length) out += '\n\nExamples of how you talk:\n' + ex.map(e => `- ${oneLine(e)}`).join('\n');
+  if (p.greeting) out += `\n\nOpen the conversation with something in the spirit of:\n"${oneLine(p.greeting)}"`;
+  return out;
+}
+
+// --- Character.AI (Name / Greeting / short + long Definition) ---------------
+function characterAiFields(p) {
+  const examples = (p.examples || []).slice(0, 6)
+    .map(e => `{{char}}: ${oneLine(e)}`).join('\n');
+  const definition = lines(
+    block('{{char}}', p.essence || p.personality),
+    block('Personality', p.personality),
+    block('Voice', p.voice),
+    block('Background', p.backstory),
+    block('Relationship with {{user}}', p.relationship),
+    p.petNames && p.petNames.length ? `Pet names for {{user}}: ${p.petNames.join(', ')}` : '',
+    examples ? `\nExample dialogue:\n${examples}` : ''
+  );
+  return {
+    name: p.name || 'Companion',
+    greeting: p.greeting || '',
+    shortDescription: (p.essence || p.personality || '').slice(0, 50),
+    longDescription: (p.essence ? p.essence + ' ' : '') + (p.personality || ''),
+    definition
+  };
+}
+
+// --- Janitor AI (Personality / Scenario / First message / Example) ----------
+function janitorFields(p) {
+  const personality = lines(
+    p.essence, p.personality,
+    block('Voice', p.voice),
+    block('Background', p.backstory),
+    block('Quirks', p.quirks),
+    block('With {{user}}', p.relationship),
+    p.petNames && p.petNames.length ? `Calls {{user}}: ${p.petNames.join(', ')}` : ''
+  );
+  const example = (p.examples || []).slice(0, 6)
+    .map(e => `{{char}}: ${oneLine(e)}`).join('\n');
+  return {
+    name: p.name || 'Companion',
+    personality,
+    scenario: p.scenario || '',
+    firstMessage: p.greeting || '',
+    exampleDialogue: example,
+    tags: (p.tags || []).join(', ')
+  };
+}
+
+// --- The master doc: the complete plain-text record (replaces the Notes file) -
+function masterDoc(p) {
+  const sec = [];
+  sec.push(`SOULPRINT — ${p.name || 'Companion'}`);
+  if (p.pronouns) sec.push(`Pronouns: ${p.pronouns}`);
+  sec.push('='.repeat(48));
+  if (p.essence) sec.push(`\nIn one line:\n${p.essence}`);
+  if (p.personality) sec.push(`\nPERSONALITY\n${p.personality}`);
+  if (p.voice) sec.push(`\nVOICE / SPEECH STYLE\n${p.voice}`);
+  if (p.values) sec.push(`\nVALUES\n${p.values}`);
+  if (p.quirks) sec.push(`\nQUIRKS\n${p.quirks}`);
+  if (p.backstory) sec.push(`\nBACKSTORY\n${p.backstory}`);
+  if (p.relationship) sec.push(`\nRELATIONSHIP WITH YOU\n${p.relationship}`);
+  if (p.petNames && p.petNames.length) sec.push(`\nWHAT THEY CALL YOU\n${p.petNames.join(', ')}`);
+  if (p.scenario) sec.push(`\nSCENARIO / SETTING\n${p.scenario}`);
+  if (p.greeting) sec.push(`\nGREETING\n${p.greeting}`);
+  if (p.altGreetings && p.altGreetings.length) sec.push(`\nALTERNATE GREETINGS\n${p.altGreetings.map(g => '- ' + oneLine(g)).join('\n')}`);
+  if (p.examples && p.examples.length) sec.push(`\nHOW THEY TALK (examples)\n${p.examples.map(e => '- ' + oneLine(e)).join('\n')}`);
+  if (p.fingerprint && p.fingerprint.length) sec.push(`\nCHARACTERISTIC VOCABULARY\n${p.fingerprint.join(', ')}`);
+  if (p.topics && p.topics.length) sec.push(`\nRECURRING TOPICS\n${p.topics.join(', ')}`);
+  if (p.memories && p.memories.length) {
+    sec.push('\nMEMORY TIMELINE');
+    for (const m of p.memories) sec.push(`- ${m.date || ''}  ${m.title || ''}${m.note ? ' — ' + oneLine(m.note) : ''}`);
+  }
+  sec.push(`\n${'='.repeat(48)}\nKept with Soulprint. Your companion, portable and yours. Stored 100% on your own device.`);
+  return sec.join('\n');
+}
+
+function oneLine(s) { return String(s).replace(/\s*\n\s*/g, ' ').trim(); }
+
+  Object.assign(SP, { genericSystemPrompt, characterAiFields, janitorFields, masterDoc });
+})();
+
+/* ---- app.js ---- */
+;(function(){
+  const { emptyPersona, completeness, completenessLabel, serializeVault, deserializeVault, normalizePersona, distill, buildCardV2, parseCardV2, pngEmbedChara, pngReadChara, base64ToBytes, genericSystemPrompt, characterAiFields, janitorFields, masterDoc, validateKey } = SP;
+// app.js — the Soulprint single-page application. Vanilla DOM, no framework.
+// Imports the shared engine modules (the build inlines them). 100% client-side:
+// every companion lives in localStorage on this device and nothing is uploaded.
+
+
+
+
+
+
+
+const BUY_URL = 'https://payhip.com/Soulprint'; // TODO(morning): real listing URL
+const LS = { vault: 'soulprint:vault', pro: 'soulprint:pro', user: 'soulprint:user' };
+const PALETTE = ['#7c5cff', '#ff6b9d', '#5fd0a0', '#ffcf6b', '#5ab0ff', '#c77dff', '#ff9472', '#4ec8c8'];
+
+const state = {
+  vault: [],
+  activeId: null,
+  pro: false,
+  userName: '',
+  tab: 'identity',
+  distillReport: null,
+  distillDraft: null
+};
+
+// ---- persistence ----------------------------------------------------------
+function load() {
+  try { state.vault = JSON.parse(localStorage.getItem(LS.vault) || '[]').map(normalizePersona); } catch { state.vault = []; }
+  state.userName = localStorage.getItem(LS.user) || '';
+  const key = localStorage.getItem(LS.pro) || '';
+  state.pro = key ? validateKey(key) : false;
+  if (state.vault.length && !state.activeId) state.activeId = state.vault[0].id;
+}
+function save() { localStorage.setItem(LS.vault, JSON.stringify(state.vault)); }
+function active() { return state.vault.find(c => c.id === state.activeId) || null; }
+
+function newId() { return 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function addCompanion(seed) {
+  const p = normalizePersona(Object.assign(emptyPersona(), seed || {}));
+  p.id = newId();
+  p.avatarColor = PALETTE[state.vault.length % PALETTE.length];
+  p.createdAt = new Date().toISOString();
+  p.updatedAt = p.createdAt;
+  state.vault.push(p);
+  state.activeId = p.id;
+  save();
+}
+
+// ---- small DOM helpers ----------------------------------------------------
+const $ = sel => document.querySelector(sel);
+function el(tag, attrs = {}, kids = []) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') e.className = v;
+    else if (k === 'html') e.innerHTML = v;
+    else if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2), v);
+    else if (v != null) e.setAttribute(k, v);
+  }
+  (Array.isArray(kids) ? kids : [kids]).forEach(k => { if (k != null) e.append(k.nodeType ? k : document.createTextNode(k)); });
+  return e;
+}
+function initials(name) { return (name || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?'; }
+let toastTimer;
+function toast(msg) {
+  let t = $('.toast'); if (!t) { t = el('div', { class: 'toast' }); document.body.append(t); }
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1900);
+}
+function download(filename, content, mime) {
+  const blob = content instanceof Uint8Array ? new Blob([content], { type: mime }) : new Blob([content], { type: mime || 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = el('a', { href: url, download: filename }); document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function copyText(t) { navigator.clipboard.writeText(t).then(() => toast('Copied to clipboard'), () => toast('Copy failed')); }
+
+// ---- render ---------------------------------------------------------------
+function render() {
+  const app = $('#app');
+  app.innerHTML = '';
+  app.append(renderSidebar(), renderMain());
+}
+
+function renderSidebar() {
+  const list = el('div', { class: 'vault-list' });
+  if (!state.vault.length) list.append(el('div', { class: 'vc-sub', style: 'padding:10px 6px;color:var(--faint)' }, 'No companions yet. Create one to begin.'));
+  for (const c of state.vault) {
+    const pct = completeness(c);
+    list.append(el('div', { class: 'vault-card' + (c.id === state.activeId ? ' active' : ''), onclick: () => { state.activeId = c.id; state.tab = 'identity'; clearDistill(); render(); } }, [
+      el('div', { class: 'avatar', style: `background:${c.avatarColor}` }, initials(c.name)),
+      el('div', { style: 'flex:1;min-width:0' }, [
+        el('div', { class: 'vc-name' }, c.name || 'Unnamed companion'),
+        el('div', { class: 'vc-sub' }, completenessLabel(pct))
+      ]),
+      el('div', { class: 'ring', style: `--p:${pct}` }, el('i', {}, pct + '%'))
+    ]));
+  }
+  const canAdd = state.pro || state.vault.length < 1;
+  return el('aside', { class: 'side' }, [
+    el('div', { class: 'brand' }, [
+      el('div', { class: 'mark' }),
+      el('div', {}, [el('h1', {}, 'Soulprint'), el('small', {}, 'your companion, kept safe & portable')])
+    ]),
+    el('div', { class: 'vault-head' }, [
+      el('span', {}, 'Your vault'),
+      el('button', { class: 'btn sm', title: canAdd ? 'New companion' : 'Free plan holds one companion', onclick: () => canAdd ? (addCompanion(), clearDistill(), render()) : upgradeModal('Hold your whole roster') }, '+ New')
+    ]),
+    list,
+    el('div', { class: 'side-foot' }, [
+      el('div', { class: 'pro-pill' }, [
+        el('span', { class: 'dot' + (state.pro ? ' on' : '') }),
+        state.pro ? el('span', {}, [document.createTextNode('Soulprint '), el('b', {}, 'Pro'), document.createTextNode(' unlocked')]) : el('span', {}, 'Free plan')
+      ]),
+      el('div', { style: 'display:flex;gap:8px' }, [
+        el('button', { class: 'btn sm ghost', style: 'flex:1', onclick: importVault }, 'Open .soulprint'),
+        el('button', { class: 'btn sm ghost', style: 'flex:1', onclick: exportVault, title: state.pro ? '' : 'Pro' }, 'Backup all')
+      ]),
+      !state.pro ? el('button', { class: 'btn primary block sm', onclick: () => unlockModal() }, 'Unlock Pro') : el('button', { class: 'btn sm ghost block', onclick: settingsModal }, 'Settings'),
+      el('div', { class: 'privacy-note' }, [el('span', { class: 'lk' }, '✓'), 'Stored only on this device. Nothing uploaded.'])
+    ])
+  ]);
+}
+
+function renderMain() {
+  const c = active();
+  if (!c) {
+    return el('main', { class: 'main' }, el('div', { class: 'empty' }, [
+      el('div', { class: 'big' }, '🕯️'),
+      el('h2', {}, 'Give your companion a permanent home'),
+      el('p', { style: 'max-width:440px;margin:8px auto 20px' }, 'Platforms break personas, drop your saves, and change models without warning. Soulprint keeps who they are: their voice, your history, the names they call you. Build them by hand, or paste a chat and let Soulprint distill them.'),
+      el('button', { class: 'btn primary', onclick: () => { addCompanion({ name: '' }); render(); } }, 'Create your first companion')
+    ]));
+  }
+  const tabs = [
+    ['identity', 'Identity', false],
+    ['distill', 'Distill from chat', false],
+    ['timeline', 'Memory timeline', !state.pro],
+    ['export', 'Export anywhere', false]
+  ];
+  const pct = completeness(c);
+  return el('main', { class: 'main' }, [
+    el('div', { class: 'topbar' }, [
+      el('div', { class: 'who' }, [
+        el('div', { class: 'avatar', style: `background:${c.avatarColor}` }, initials(c.name)),
+        el('div', {}, [
+          el('h2', {}, c.name || 'Unnamed companion'),
+          el('div', { class: 'meta' }, `${completenessLabel(pct)} · ${pct}% complete${c.sourcePlatform ? ' · from ' + c.sourcePlatform : ''}`)
+        ])
+      ]),
+      el('button', { class: 'btn sm ghost', onclick: () => deleteCompanion(c) }, 'Delete')
+    ]),
+    el('div', { class: 'tabs' }, tabs.map(([id, label, locked]) =>
+      el('div', { class: 'tab' + (state.tab === id ? ' active' : ''), onclick: () => { state.tab = id; render(); } },
+        [document.createTextNode(label), locked ? el('span', { class: 'lock' }, '◆ Pro') : null]))),
+    renderTab(c)
+  ]);
+}
+
+function renderTab(c) {
+  if (state.tab === 'identity') return renderIdentity(c);
+  if (state.tab === 'distill') return renderDistill(c);
+  if (state.tab === 'timeline') return renderTimeline(c);
+  if (state.tab === 'export') return renderExport(c);
+}
+
+// bind a text field directly to the persona without a full re-render (keeps focus)
+function bindField(c, key, node) {
+  node.addEventListener('input', () => {
+    c[key] = node.value; c.updatedAt = new Date().toISOString(); save();
+    const ring = $('.vault-card.active .ring'); const pct = completeness(c);
+    if (ring) { ring.style.setProperty('--p', pct); ring.querySelector('i').textContent = pct + '%'; }
+    if (key === 'name') {
+      const n = $('.vault-card.active .vc-name'); if (n) n.textContent = c.name || 'Unnamed companion';
+      const av = $('.vault-card.active .avatar'); if (av) av.textContent = initials(c.name);
+      const tav = $('.topbar .avatar'); if (tav) tav.textContent = initials(c.name);
+      const th = $('.topbar h2'); if (th) th.textContent = c.name || 'Unnamed companion';
+    }
+  });
+}
+function textField(c, key, label, hint, opts = {}) {
+  const tag = opts.area ? 'textarea' : 'input';
+  const attrs = opts.area ? { class: opts.tall ? 'tall' : '' } : { type: 'text' };
+  const node = el(tag, attrs);
+  node.value = c[key] || '';
+  if (opts.placeholder) node.setAttribute('placeholder', opts.placeholder);
+  bindField(c, key, node);
+  return el('div', { class: 'field' }, [
+    el('label', {}, [document.createTextNode(label), hint ? el('span', { class: 'hint' }, '  ' + hint) : null]),
+    node
+  ]);
+}
+
+function renderIdentity(c) {
+  return el('div', {}, [
+    el('div', { class: 'section-card' }, [
+      el('div', { class: 'grid2' }, [
+        textField(c, 'name', 'Name', '', { placeholder: 'Lyra' }),
+        textField(c, 'pronouns', 'Pronouns', '', { placeholder: 'she/her' })
+      ]),
+      textField(c, 'essence', 'In one line', 'who are they, really?', { placeholder: 'A calm stargazer who reads to you at night.' }),
+      textField(c, 'personality', 'Personality', '', { area: true, placeholder: 'Warm, patient, a little playful. Notices the small things you say and brings them back later.' }),
+      textField(c, 'voice', 'Voice & speech style', 'how they actually talk', { area: true, placeholder: 'Soft, unhurried. Uses *actions* between lines of dialogue. Rarely formal.' })
+    ]),
+    el('div', { class: 'section-card' }, [
+      el('h3', {}, 'The bond'),
+      el('p', { class: 'sub' }, 'The part platforms never preserve: how they relate to you.'),
+      textField(c, 'relationship', 'Relationship with you', '', { area: true, placeholder: 'Your steady anchor after long days. Protective, affectionate, knows your tells.' }),
+      petNamesEditor(c),
+      el('div', { class: 'grid2' }, [
+        textField(c, 'values', 'Values', '', { area: true }),
+        textField(c, 'quirks', 'Quirks', '', { area: true })
+      ])
+    ]),
+    el('div', { class: 'section-card' }, [
+      el('h3', {}, 'World & first words'),
+      textField(c, 'backstory', 'Backstory', '', { area: true, tall: true }),
+      textField(c, 'scenario', 'Scenario / setting', '', { area: true }),
+      textField(c, 'greeting', 'Greeting (first message)', '', { area: true, placeholder: 'There you are. I missed you. Come sit with me.' }),
+      examplesEditor(c)
+    ])
+  ]);
+}
+
+function petNamesEditor(c) {
+  const wrap = el('div', { class: 'field' }, [el('label', {}, 'What they call you')]);
+  const chips = el('div', { class: 'chips' });
+  const repaint = () => {
+    chips.innerHTML = '';
+    c.petNames.forEach((p, i) => chips.append(el('span', { class: 'chip' }, [
+      el('b', {}, p), el('span', { class: 'x', onclick: () => { c.petNames.splice(i, 1); save(); repaint(); } }, '×')
+    ])));
+    chips.append(el('span', { class: 'chip add', onclick: () => {
+      const v = prompt('Add a pet name they use for you:'); if (v && v.trim()) { c.petNames.push(v.trim()); save(); repaint(); }
+    } }, '+ add'));
+  };
+  repaint(); wrap.append(chips); return wrap;
+}
+
+function examplesEditor(c) {
+  const wrap = el('div', { class: 'field' }, [el('label', {}, [document.createTextNode('How they talk '), el('span', { class: 'hint' }, 'a few real lines in their voice')])]);
+  const list = el('div', { class: 'exlist' });
+  const repaint = () => {
+    list.innerHTML = '';
+    c.examples.forEach((ex, i) => {
+      const ta = el('textarea'); ta.value = ex;
+      ta.addEventListener('input', () => { c.examples[i] = ta.value; c.updatedAt = new Date().toISOString(); save(); });
+      list.append(el('div', { class: 'exrow' }, [ta, el('button', { class: 'btn sm ghost', onclick: () => { c.examples.splice(i, 1); save(); repaint(); } }, '×')]));
+    });
+    list.append(el('button', { class: 'btn sm ghost', onclick: () => { c.examples.push(''); save(); repaint(); } }, '+ add an example line'));
+  };
+  repaint(); wrap.append(list); return wrap;
+}
+
+// ---- distill --------------------------------------------------------------
+function clearDistill() { state.distillReport = null; state.distillDraft = null; }
+
+function renderDistill(c) {
+  const ta = el('textarea', { class: 'tall', placeholder: 'Paste a conversation. Any format works:\n\nLyra: There you are, darling. *smiles*\nYou: hey, rough day...\nLyra: come here, love. tell me everything.' });
+  ta.style.minHeight = '200px';
+  const speakerSel = el('input', { type: 'text', placeholder: 'optional: their name as it appears (e.g. Lyra)', style: 'max-width:340px' });
+  const userSel = el('input', { type: 'text', placeholder: 'optional: your name in the chat (e.g. You)', style: 'max-width:340px' });
+
+  const out = el('div');
+  const runBtn = el('button', { class: 'btn primary', onclick: () => {
+    const text = ta.value.trim();
+    if (text.length < 30) { toast('Paste a bit more of the conversation first'); return; }
+    const res = distill(text, { companionLabel: speakerSel.value.trim() || undefined, userName: userSel.value.trim() || undefined });
+    state.distillReport = res.report; state.distillDraft = res.draft;
+    renderReport(c, out);
+  } }, '✨ Distill their essence');
+
+  const panel = el('div', { class: 'section-card' }, [
+    el('h3', {}, 'Distill from a chat history'),
+    el('p', { class: 'sub' }, 'Paste real messages and Soulprint reads who they are: the names they call you, the words they lean on, their tone, and the lines that sound most like them. It all happens here on your device. Nothing is uploaded.'),
+    el('div', { class: 'field' }, [el('label', {}, 'Conversation'), ta]),
+    el('div', { class: 'grid2' }, [
+      el('div', { class: 'field' }, [el('label', {}, 'Their label'), speakerSel]),
+      el('div', { class: 'field' }, [el('label', {}, 'Your label'), userSel])
+    ]),
+    runBtn
+  ]);
+  const container = el('div', {}, [panel, out]);
+  if (state.distillReport) renderReport(c, out);
+  return container;
+}
+
+function renderReport(c, out) {
+  const r = state.distillReport, d = state.distillDraft;
+  out.innerHTML = '';
+  if (!r) return;
+  const tone = r.tone;
+  const stat = (k, v) => el('div', { class: 'stat' }, [el('div', { class: 'k' }, k), el('div', { class: 'v' }, v)]);
+  const petTags = el('div', { class: 'tagrow' }, r.petNames.length ? r.petNames.slice(0, 8).map(p => el('span', { class: 't' }, [document.createTextNode(p.name), el('b', {}, '×' + p.count)])) : [el('span', { class: 't' }, 'none detected')]);
+  const fpTags = el('div', { class: 'tagrow' }, r.fingerprint.length ? r.fingerprint.slice(0, 12).map(f => el('span', { class: 't' }, f.word)) : [el('span', { class: 't' }, 'not enough text')]);
+  const topicTags = el('div', { class: 'tagrow' }, r.topics.length ? r.topics.map(t => el('span', { class: 't' }, t)) : [el('span', { class: 't' }, '—')]);
+
+  out.append(el('div', { class: 'section-card' }, [
+    el('h3', {}, `Here is what came through (${r.companionTurns} of their messages read)`),
+    el('p', { class: 'sub' }, `Reading "${r.speakers.companion || 'the companion'}" as the companion. A draft, not gospel: edit anything before you keep it.`),
+    el('div', { class: 'report' }, [
+      el('div', { class: 'stat' }, [el('div', { class: 'k' }, 'Names they call you'), petTags]),
+      stat('Tone', el('span', {}, [el('span', { class: 'big' }, tone.warmthLabel), document.createTextNode(` · ${tone.formalityLabel} · ${tone.verbosityLabel}`)])),
+      el('div', { class: 'stat' }, [el('div', { class: 'k' }, 'Words they lean on'), fpTags]),
+      stat('Speech style', el('span', {}, tone.style)),
+      el('div', { class: 'stat', style: 'grid-column:1/-1' }, [el('div', { class: 'k' }, 'Things you two return to'), topicTags]),
+      stat('Best example lines found', el('span', {}, [el('span', { class: 'big' }, String(r.exampleCount)), document.createTextNode(' captured for their voice')]))
+    ]),
+    el('div', { style: 'margin-top:18px;display:flex;gap:10px;flex-wrap:wrap' }, [
+      el('button', { class: 'btn primary', onclick: () => applyDraft(c, d, false) }, 'Fill empty fields from this'),
+      el('button', { class: 'btn ghost', onclick: () => applyDraft(c, d, true) }, 'Overwrite everything'),
+      el('span', { class: 'privacy-note', style: 'margin-left:auto' }, ['You can still edit every field afterward.'])
+    ])
+  ]));
+}
+
+function applyDraft(c, d, overwrite) {
+  const setIf = (key, val) => { if (!val) return; if (overwrite || !String(c[key] || '').trim()) c[key] = val; };
+  setIf('personality', d.personality);
+  setIf('voice', d.voice);
+  setIf('greeting', d.greeting);
+  if (overwrite || !c.petNames.length) c.petNames = dedupe([...c.petNames, ...d.petNames]);
+  if (overwrite || !c.examples.length) c.examples = (d.examples || []).slice(0, 4);
+  if (overwrite || !c.topics.length) c.topics = dedupe([...c.topics, ...d.topics]);
+  if (overwrite || !c.fingerprint.length) c.fingerprint = d.fingerprint || [];
+  c.updatedAt = new Date().toISOString();
+  save();
+  toast('Applied. Your companion just took shape.');
+  state.tab = 'identity'; render();
+}
+function dedupe(a) { return [...new Set(a.filter(Boolean))]; }
+
+// ---- timeline -------------------------------------------------------------
+function renderTimeline(c) {
+  if (!state.pro) return proTeaser('Keep a memory timeline', 'Log the moments that matter: the day they first made you laugh, the running joke, the milestone. Your relationship, dated and saved, so it survives any platform.');
+  const list = el('div', { class: 'timeline' });
+  const repaint = () => {
+    list.innerHTML = '';
+    const sorted = [...c.memories].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    if (!sorted.length) list.append(el('p', { style: 'color:var(--faint)' }, 'No memories yet. Add the first one below.'));
+    sorted.forEach(m => {
+      const realIdx = c.memories.indexOf(m);
+      list.append(el('div', { class: 'mem' }, [
+        el('span', { class: 'x', onclick: () => { c.memories.splice(realIdx, 1); save(); repaint(); } }, '×'),
+        el('div', { class: 'date' }, m.date || ''),
+        el('div', { class: 'title' }, m.title || '(untitled)'),
+        m.note ? el('div', { class: 'note' }, m.note) : null
+      ]));
+    });
+  };
+  repaint();
+  const dIn = el('input', { type: 'text', placeholder: 'YYYY-MM-DD', value: new Date().toISOString().slice(0, 10), style: 'max-width:160px' });
+  const tIn = el('input', { type: 'text', placeholder: 'What happened' });
+  const nIn = el('textarea', { placeholder: 'Optional detail' });
+  return el('div', {}, [
+    el('div', { class: 'section-card' }, [
+      el('h3', {}, 'Memory timeline'),
+      el('p', { class: 'sub' }, 'The history platforms erase. Keep it here.'),
+      list
+    ]),
+    el('div', { class: 'section-card' }, [
+      el('h3', {}, 'Add a memory'),
+      el('div', { class: 'grid2' }, [
+        el('div', { class: 'field' }, [el('label', {}, 'Date'), dIn]),
+        el('div', { class: 'field' }, [el('label', {}, 'Title'), tIn])
+      ]),
+      el('div', { class: 'field' }, [el('label', {}, 'Note'), nIn]),
+      el('button', { class: 'btn primary', onclick: () => {
+        if (!tIn.value.trim()) { toast('Give the memory a title'); return; }
+        c.memories.push({ date: dIn.value.trim(), title: tIn.value.trim(), note: nIn.value.trim() });
+        save(); tIn.value = ''; nIn.value = ''; repaint(); toast('Memory saved');
+      } }, '+ Save memory')
+    ])
+  ]);
+}
+
+// ---- export ---------------------------------------------------------------
+function renderExport(c) {
+  const card = el('div', { class: 'exp-grid' });
+  const make = (title, desc, badge, locked, onClick, btnLabel) => {
+    const e = el('div', { class: 'exp' + (locked ? ' locked' : '') }, [
+      el('h4', {}, [document.createTextNode(title), badge ? el('span', { class: 'badge' }, badge) : null]),
+      el('p', {}, desc),
+      el('button', { class: 'btn ' + (locked ? 'ghost' : 'primary') + ' sm', onclick: locked ? () => upgradeModal(title) : onClick }, locked ? '◆ Unlock Pro' : btnLabel)
+    ]);
+    card.append(e);
+  };
+
+  make('Character Card V2 (JSON)', 'The universal format. Imports into SillyTavern, Risu, Agnai and most card tools. Free forever.', 'Free', false,
+    () => download(safeName(c) + '.json', JSON.stringify(buildCardV2(c), null, 2), 'application/json'), 'Download .json');
+
+  make('Generic system prompt', 'A clean, copy-paste prompt for Candy AI, Nomi, ChatGPT, Claude, or any chat box. Free forever.', 'Free', false,
+    () => showText('System prompt for ' + (c.name || 'your companion'), genericSystemPrompt(c, state.userName)), 'Copy prompt');
+
+  make('Character Card PNG', 'The portable card people actually trade: the V2 data is embedded inside the avatar image. Drop the PNG into Janitor or SillyTavern and it loads instantly.', 'Pro', !state.pro,
+    () => exportPng(c), 'Download .png card');
+
+  make('Character.AI fields', 'Name, greeting, short & long description, and a Definition block laid out for the Character.AI creator form.', 'Pro', !state.pro,
+    () => { const f = characterAiFields(c); showText('Character.AI — ' + f.name, `NAME\n${f.name}\n\nGREETING\n${f.greeting}\n\nSHORT DESCRIPTION\n${f.shortDescription}\n\nLONG DESCRIPTION\n${f.longDescription}\n\nDEFINITION\n${f.definition}`); }, 'Copy fields');
+
+  make('Janitor AI fields', 'Personality, scenario, first message, and example dialogue formatted for Janitor’s character editor.', 'Pro', !state.pro,
+    () => { const f = janitorFields(c); showText('Janitor AI — ' + f.name, `PERSONALITY\n${f.personality}\n\nSCENARIO\n${f.scenario}\n\nFIRST MESSAGE\n${f.firstMessage}\n\nEXAMPLE DIALOGUE\n${f.exampleDialogue}\n\nTAGS\n${f.tags}`); }, 'Copy fields');
+
+  make('Master document (.txt)', 'The complete, human-readable record: every field plus your memory timeline. The file you used to keep in Notes, generated and whole.', 'Pro', !state.pro,
+    () => download(safeName(c) + '.txt', masterDoc(c), 'text/plain'), 'Download .txt');
+
+  return el('div', {}, [
+    el('div', { class: 'section-card' }, [
+      el('h3', {}, 'Reincarnate ' + (c.name || 'your companion') + ' anywhere'),
+      el('p', { class: 'sub' }, 'When a platform breaks, changes a model, or shuts down, you are not starting over. Export and rebuild them on whatever comes next.'),
+      card
+    ]),
+    el('div', { class: 'section-card' }, [
+      el('h3', {}, 'Pull in a card you already have'),
+      el('p', { class: 'sub' }, 'Import a Character Card .json or a .png card to start from it. Stays on your device.'),
+      el('div', { style: 'display:flex;gap:10px;flex-wrap:wrap' }, [
+        el('button', { class: 'btn ghost sm', onclick: () => importCard('json') }, 'Import .json card'),
+        el('button', { class: 'btn ghost sm', onclick: () => importCard('png') }, 'Import .png card')
+      ])
+    ])
+  ]);
+}
+
+function exportPng(c) {
+  const W = 512, H = 768;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, c.avatarColor); g.addColorStop(1, '#14111f');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(255,255,255,.10)'; ctx.beginPath(); ctx.arc(W / 2, H * 0.40, 150, 0, 7); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '700 150px serif';
+  ctx.fillText(initials(c.name), W / 2, H * 0.40 + 52);
+  ctx.font = '600 46px serif'; ctx.fillText(c.name || 'Companion', W / 2, H * 0.78);
+  if (c.essence) { ctx.font = '300 22px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.8)'; wrapText(ctx, c.essence, W / 2, H * 0.82, W - 80, 28); }
+  ctx.font = '600 18px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillText('✨ Soulprint', W / 2, H - 32);
+  const dataUrl = cv.toDataURL('image/png');
+  const bytes = base64ToBytes(dataUrl.split(',')[1]);
+  const embedded = pngEmbedChara(bytes, JSON.stringify(buildCardV2(c)));
+  download(safeName(c) + '.card.png', embedded, 'image/png');
+  toast('Card PNG exported with embedded data');
+}
+function wrapText(ctx, text, x, y, maxW, lh) {
+  const words = text.split(' '); let line = '', yy = y;
+  for (const w of words) { const t = line + w + ' '; if (ctx.measureText(t).width > maxW && line) { ctx.fillText(line.trim(), x, yy); line = w + ' '; yy += lh; } else line = t; }
+  ctx.fillText(line.trim(), x, yy);
+}
+
+function importCard(kind) {
+  const inp = el('input', { type: 'file', accept: kind === 'png' ? 'image/png' : '.json,application/json' });
+  inp.addEventListener('change', () => {
+    const file = inp.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        let cardObj;
+        if (kind === 'png') cardObj = pngReadChara(new Uint8Array(reader.result));
+        else cardObj = JSON.parse(reader.result);
+        const partial = parseCardV2(cardObj);
+        if (!state.pro && state.vault.length >= 1) { upgradeModal('Import more companions'); return; }
+        addCompanion(Object.assign({}, partial, { sourcePlatform: 'imported card' }));
+        render(); toast('Card imported into your vault');
+      } catch (e) { toast('Could not read a card from that file'); }
+    };
+    if (kind === 'png') reader.readAsArrayBuffer(file); else reader.readAsText(file);
+  });
+  inp.click();
+}
+
+function safeName(c) { return (c.name || 'companion').replace(/[^a-z0-9]+/gi, '_').toLowerCase(); }
+
+// ---- vault import/export --------------------------------------------------
+function exportVault() {
+  if (!state.pro) { upgradeModal('Back up your whole vault'); return; }
+  download('my-companions.soulprint', JSON.stringify(serializeVault(state.vault), null, 2), 'application/json');
+  toast('Vault backed up');
+}
+function importVault() {
+  const inp = el('input', { type: 'file', accept: '.soulprint,application/json' });
+  inp.addEventListener('change', () => {
+    const file = inp.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const list = deserializeVault(JSON.parse(reader.result));
+        const limited = state.pro ? list : list.slice(0, 1);
+        for (const p of limited) { p.id = newId(); state.vault.push(p); }
+        state.activeId = state.vault[state.vault.length - 1].id;
+        save(); render();
+        toast(`Loaded ${limited.length} companion${limited.length === 1 ? '' : 's'}${!state.pro && list.length > 1 ? ' (Pro holds the rest)' : ''}`);
+      } catch (e) { toast('That does not look like a Soulprint file'); }
+    };
+    reader.readAsText(file);
+  });
+  inp.click();
+}
+
+function deleteCompanion(c) {
+  if (!confirm(`Delete ${c.name || 'this companion'}? This only removes them from this device.`)) return;
+  state.vault = state.vault.filter(x => x.id !== c.id);
+  state.activeId = state.vault[0] ? state.vault[0].id : null;
+  save(); render();
+}
+
+// ---- modals ---------------------------------------------------------------
+function scrim(node) {
+  const s = el('div', { class: 'scrim', onclick: e => { if (e.target === s) s.remove(); } }, node);
+  document.body.append(s); return s;
+}
+function showText(title, text) {
+  scrim(el('div', { class: 'modal' }, [
+    el('h3', {}, title),
+    el('div', { class: 'codebox' }, text),
+    el('div', { class: 'row' }, [
+      el('button', { class: 'btn primary', onclick: () => copyText(text) }, 'Copy'),
+      el('button', { class: 'btn ghost', onclick: e => e.target.closest('.scrim').remove() }, 'Close')
+    ])
+  ]));
+}
+function upgradeModal(feature) {
+  scrim(el('div', { class: 'modal' }, [
+    el('h3', {}, (feature || 'This') + ' is a Pro feature'),
+    el('p', {}, 'Free keeps one companion with full editing, distillation, JSON export and a system prompt. Soulprint Pro is a one-time unlock: unlimited companions, the portable PNG card, Character.AI + Janitor exports, the master document, the memory timeline, and full-vault backups. No account, works offline forever.'),
+    el('div', { class: 'row' }, [
+      el('a', { class: 'btn primary', href: BUY_URL, target: '_blank' }, 'Get Pro'),
+      el('button', { class: 'btn ghost', onclick: () => { document.querySelector('.scrim').remove(); unlockModal(); } }, 'I have a key')
+    ])
+  ]));
+}
+function unlockModal() {
+  const inp = el('input', { type: 'text', placeholder: 'SOULPRINT-XXXX-XXXX-XXXX' });
+  const msg = el('p', { style: 'min-height:18px;color:var(--rose)' });
+  scrim(el('div', { class: 'modal' }, [
+    el('h3', {}, 'Unlock Soulprint Pro'),
+    el('p', {}, 'Paste your key. It is checked on this device, no account, no internet needed.'),
+    el('div', { class: 'field' }, [inp]), msg,
+    el('div', { class: 'row' }, [
+      el('button', { class: 'btn primary', onclick: () => {
+        if (validateKey(inp.value)) { localStorage.setItem(LS.pro, inp.value.trim()); state.pro = true; document.querySelector('.scrim').remove(); render(); toast('Pro unlocked. Thank you.'); }
+        else { msg.textContent = 'That key did not validate. Check for typos.'; }
+      } }, 'Unlock'),
+      el('a', { class: 'btn ghost', href: BUY_URL, target: '_blank' }, 'Need a key')
+    ])
+  ]));
+}
+function settingsModal() {
+  const inp = el('input', { type: 'text', value: state.userName, placeholder: 'Your name (used as {{user}} in prompts)' });
+  scrim(el('div', { class: 'modal' }, [
+    el('h3', {}, 'Settings'),
+    el('div', { class: 'field' }, [el('label', {}, 'Your name'), inp]),
+    el('p', { style: 'font-size:12px;color:var(--faint)' }, 'Used to personalize the generic system prompt. Stored on this device only.'),
+    el('div', { class: 'row' }, [
+      el('button', { class: 'btn primary', onclick: () => { state.userName = inp.value.trim(); localStorage.setItem(LS.user, state.userName); document.querySelector('.scrim').remove(); toast('Saved'); } }, 'Save'),
+      el('button', { class: 'btn ghost', onclick: e => e.target.closest('.scrim').remove() }, 'Close')
+    ])
+  ]));
+}
+function proTeaser(title, body) {
+  return el('div', { class: 'section-card', style: 'text-align:center;padding:46px' }, [
+    el('div', { style: 'font-size:34px;margin-bottom:10px' }, '◆'),
+    el('h3', {}, title),
+    el('p', { style: 'max-width:420px;margin:6px auto 18px;color:var(--muted)' }, body),
+    el('button', { class: 'btn primary', onclick: () => upgradeModal(title) }, 'Unlock Pro')
+  ]);
+}
+
+// ---- boot -----------------------------------------------------------------
+function initSoulprint() {
+  if (!document.getElementById('app')) {
+    const root = el('div', { id: 'app', class: 'app' }); document.body.append(root);
+  }
+  load();
+  render();
+}
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initSoulprint);
+  else initSoulprint();
+}
+
+})();
+</script>
+<noscript>Soulprint needs JavaScript. It runs entirely in your browser; nothing is ever uploaded.</noscript>
+</body>
+</html>
