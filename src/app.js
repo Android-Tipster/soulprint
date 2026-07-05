@@ -8,7 +8,7 @@ import { buildCardV2, parseCardV2, pngEmbedChara, pngReadChara, base64ToBytes } 
 import { genericSystemPrompt, characterAiFields, janitorFields, masterDoc } from '../src/exports.js';
 import { validateKey } from '../src/license.js';
 
-const BUY_URL = 'https://payhip.com/Soulprint'; // TODO(morning): real listing URL
+const BUY_URL = 'https://payhip.com/b/H4WBI';
 const LS = { vault: 'soulprint:vault', pro: 'soulprint:pro', user: 'soulprint:user' };
 const PALETTE = ['#7c5cff', '#ff6b9d', '#5fd0a0', '#ffcf6b', '#5ab0ff', '#c77dff', '#ff9472', '#4ec8c8'];
 
