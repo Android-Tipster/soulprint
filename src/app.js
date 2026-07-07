@@ -115,7 +115,11 @@ function renderSidebar() {
         el('button', { class: 'btn sm ghost', style: 'flex:1', onclick: exportVault, title: state.pro ? '' : 'Pro' }, 'Backup all')
       ]),
       !state.pro ? el('button', { class: 'btn primary block sm', onclick: () => unlockModal() }, 'Unlock Pro') : el('button', { class: 'btn sm ghost block', onclick: settingsModal }, 'Settings'),
-      el('div', { class: 'privacy-note' }, [el('span', { class: 'lk' }, '✓'), 'Stored only on this device. Nothing uploaded.'])
+      el('div', { class: 'privacy-note' }, [el('span', { class: 'lk' }, '✓'), 'Stored only on this device. Nothing uploaded.']),
+      el('div', { class: 'privacy-note' }, [
+        document.createTextNode('Proxy acting up? '),
+        el('a', { href: 'https://android-tipster.github.io/proxymedic/', target: '_blank', rel: 'noopener', style: 'color:inherit;text-decoration:underline' }, 'Diagnose it free with ProxyMedic')
+      ])
     ])
   ]);
 }
